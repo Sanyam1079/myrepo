@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _triple
 import torch.backends.cudnn as cudnn
-from apex import amp
+from torch.cuda.amp import amp
 
 
 class block(nn.Module):

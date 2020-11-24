@@ -122,17 +122,17 @@ class spatioTemporalClassifier(nn.Module):
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
         model.train()
         model.cuda()
-        model, optimizer = amp.initialize(model, optimizer, opt_level='O3', keep_batchnorm_fp32=False)
+        #model, optimizer = amp.initialize(model, optimizer, opt_level='O3', keep_batchnorm_fp32=False)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=10, gamma=0.1)
-        # criterion = torch.nn.CrossEntropyLoss().cuda()
+        criterion = torch.nn.CrossEntropyLoss().cuda()
         min_loss = 2000
-        criterion = torch.nn.BCELoss().cuda()
+        #criterion = torch.nn.BCELoss().cuda()
         for i in range(0, epochs):
             train_accuracy = 0
             net_loss = 0
             for _, (data, label) in enumerate(dataloader):
                 optimizer.zero_grad()
-                data = data.half().cuda()
+                data = data.cuda()
                 label = label.float().cuda()
                 with amp.autocast():
                     out = model(data)
@@ -140,9 +140,9 @@ class spatioTemporalClassifier(nn.Module):
                 scaler.scale(loss).backward()
                 scaler.step(optimizer)
                 scaler.update()
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                    optimizer.step()
+                #with amp.scale_loss(loss, optimizer) as scaled_loss:
+                loss.backward()
+                optimizer.step()
                 max_index = out.max(dim=1)[1]
                 train_accuracy = (max_index==label).sum()
                 net_loss += loss.item()

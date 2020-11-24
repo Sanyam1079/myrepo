@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.nn.modules.utils import _triple
 import torch.backends.cudnn as cudnn
-from torch.cuda.amp import amp
+from torch.cuda import amp
 
 
 class block(nn.Module):
@@ -118,6 +118,7 @@ class spatioTemporalClassifier(nn.Module):
 
     def train_model(self, model, dataloader, epochs):
         cudnn.benchmark = True
+        scaler = amp.GradScaler()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
         model.train()
         model.cuda()
@@ -133,8 +134,12 @@ class spatioTemporalClassifier(nn.Module):
                 optimizer.zero_grad()
                 data = data.half().cuda()
                 label = label.float().cuda()
-                out = model(data)
-                loss = criterion(out, label)
+                with amp.autocast():
+                    out = model(data)
+                    loss = criterion(out, label)
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
                 with amp.scale_loss(loss, optimizer) as scaled_loss:
                     scaled_loss.backward()
                     optimizer.step()

@@ -89,7 +89,10 @@ class MobilenetV2(nn.Module):
             else:
                 expantion_Ratio = 6
             for i in range(channel+1):
-                stride = (1, 1, 1) if not i==0 else stride= stride
+                if i!=0:
+                    stride = (1, 1, 1)
+                else: 
+                    stride = stride
                 self.residuals.append(inverted_residuals(
                     input_planes= self.input_planes*expantion_Ratio,
                     output_planes= expantionRatio*output,

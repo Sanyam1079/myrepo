@@ -148,7 +148,7 @@ class spatioTemporalClassifier(nn.Module):
                 net_loss += loss.item()
             print('------------------------------------------')
             if min_loss> net_loss:
-                torch.save(model.state_dict(), '/home/atharva/action.pth')
+                torch.save(model.state_dict(), '/home/Sanyam/actions_TT.pth')
                 min_loss = net_loss
             print('EPOCH ', i)
             print(train_accuracy / len(dataloader))

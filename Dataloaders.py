@@ -1,3 +1,4 @@
+#importing necessary modules
 import cv2
 import numpy
 
@@ -8,13 +9,14 @@ from pathlib import Path
 import os
 import shutil
 
-class customVideoDataset(Dataset):
-    def __init__(self, path, frame_count):
+#definiing the class customVideoDataset used to load dataset and segregate into labels and frames.
+class customVideoDataset(Dataset): 
+    def __init__(self, path, frame_count): #initialization of parameters needed to load the dataset ,i.e videos, labels and frames.
         self.videos = []
         self.labels = []
         self.frames = frame_count
         folder = Path(path)
-        for label in sorted(os.listdir(folder)):
+        for label in sorted(os.listdir(folder)): #making a list of video/paths and labels
             for fname in os.listdir(os.path.join(folder, label)):
                 self.videos.append(os.path.join(folder, label, fname))
                 self.labels.append(label)
@@ -23,11 +25,11 @@ class customVideoDataset(Dataset):
         self.label_array = numpy.array([self.label2index[label] for label in self.labels], dtype=int)
 
     def __getitem__(self, idx):
-        video = cv2.VideoCapture(self.videos[idx])
+        video = cv2.VideoCapture(self.videos[idx]) #using openCV to load/capture videos
         stacked_frames = numpy.empty(shape=(self.frames, 32, 32, 3),
                                      dtype=numpy.dtype('float16'))  # as frame would have shape h,w,channels
         frame_count = 0
-        while video.isOpened() and frame_count<self.frames:
+        while video.isOpened() and frame_count<self.frames:   #frame count
             ret, frame = video.read()
             if not ret:
                 break
@@ -41,16 +43,16 @@ class customVideoDataset(Dataset):
         return stacked_frames, self.label_array[idx]
 
     def __len__(self):
-        length = len(self.videos)
+        length = len(self.videos) 
         return length
 
-
+##loading the dataset using dataloader from torch.utils
 def getDataloader(path, batch, workers, frames):
     dataset = customVideoDataset(path=path, frame_count=frames)
     dataloader = DataLoader(dataset, batch_size=batch, num_workers=workers, shuffle=True)
     return dataloader
 
-#Run this once to get train test split of UFC101
+##Run this once to get train test split of UFC101
 def ufctraintest(root_dir, annotation_dir, target_dir):
     os.chdir(annotation_dir)
     files = os.listdir()
@@ -79,7 +81,7 @@ def ufctraintest(root_dir, annotation_dir, target_dir):
     print(len(classes))
     print('MOVING TRAINING FILES')
 
-    for file in train:
+    for file in train:  ##generating training splits/their paths
         print(train)
         line = open(annotation_dir +'/'+file, 'r')
         for video in line:
@@ -99,7 +101,7 @@ def ufctraintest(root_dir, annotation_dir, target_dir):
     print(len(classes))
     print('MOVING TEST FILES')
 
-    for file in test:
+    for file in test: ##generate test splits/their paths
         print(test)
         line = open(annotation_dir +'/'+file, 'r')
         for video in line:
@@ -112,3 +114,4 @@ def ufctraintest(root_dir, annotation_dir, target_dir):
                     except Exception as e:
                         print(e)
         line.close()
+  ##train and test splits paths are genarated

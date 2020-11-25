@@ -1,3 +1,4 @@
+##importing the necessary modules
 import math
 import time
 
@@ -7,9 +8,9 @@ from torch.nn.modules.utils import _triple
 import torch.backends.cudnn as cudnn
 from torch.cuda import amp
 
-
+##defining a block class
 class block(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel, stride, padding):
+    def __init__(self, in_channels, out_channels, kernel, stride, padding): ##__init__ intializes the parameters- kernel, stride and padding for both spatial and temporal parts
         super(block, self).__init__()
         kernel = _triple(kernel)
         stride = _triple(stride)
@@ -26,8 +27,8 @@ class block(nn.Module):
         # compute intermediate channels as given in the paper
         interim_channels = int(math.floor((kernel[0] * kernel[1] * kernel[2] * in_channels * out_channels) / (
                     (kernel[1] * kernel[2] * in_channels) + (kernel[0] * out_channels))))
-
-        self.spatialConv = nn.Conv3d(in_channels=in_channels,
+        #defining spatial and temporal convolution operations and batch normalization
+        self.spatialConv = nn.Conv3d(in_channels=in_channels,                
                                      out_channels=interim_channels,
                                      kernel_size=spatial_kernel,
                                      stride=spatial_stride,
@@ -43,16 +44,16 @@ class block(nn.Module):
 
         self.batchNorm = nn.BatchNorm3d(interim_channels, affine=True)
 
-    def forward(self, x):
+    def forward(self, x): ##one forward operation includes spatial and temporal convolutions batch-normalization and activation fucntion as relu
         x = self.spatialConv(x)
         x = self.batchNorm(x)
         x = nn.functional.relu(x)
         x = self.temporalConv(x)
         return x
 
-
+#defining the Residual Block as mentioned in the paper
 class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel, stride=1):
+    def __init__(self, in_channels, out_channels, kernel, stride=1): ##defining convolution/batch_norm operations on a block with #in_channels and #out_chanels 
         super(ResidualBlock, self).__init__()
         pad = kernel // 2
         self.Conv1 = block(in_channels=in_channels, out_channels=out_channels, kernel=kernel, stride=stride,
@@ -70,7 +71,7 @@ class ResidualBlock(nn.Module):
         out = nn.functional.relu(res + res1)
         return out
 
-
+##R(2+1)D network definition
 class R2plus1D(nn.Module):
     def __init__(self, in_channels, out_channels, kernel, depth):
         super(R2plus1D, self).__init__()
@@ -89,7 +90,7 @@ class R2plus1D(nn.Module):
             x = layer(x)
         return x
 
-
+##spatiotemporal classifier used to classify the videos using five convolutional layers and one pooling 
 class spatioTemporalClassifier(nn.Module):
     def __init__(self, classes):
         super(spatioTemporalClassifier, self).__init__()
@@ -104,7 +105,7 @@ class spatioTemporalClassifier(nn.Module):
         self.conv4 = R2plus1D(in_channels=128, out_channels=256, kernel=3, depth=1)
         self.conv5 = R2plus1D(in_channels=256, out_channels=512, kernel=3, depth=1)
         self.pool = nn.AdaptiveAvgPool3d(1)
-
+ #fucntions in one forward pass
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
@@ -115,7 +116,7 @@ class spatioTemporalClassifier(nn.Module):
         x = x.view(-1, 512)
         x = self.linear(x)
         return x
-
+#default optimizer used: SGD ; loss: Cross Entropy Loss
     def train_model(self, model, dataloader, epochs):
         cudnn.benchmark = True
         scaler = amp.GradScaler()
@@ -127,7 +128,7 @@ class spatioTemporalClassifier(nn.Module):
         criterion = torch.nn.CrossEntropyLoss().cuda()
         min_loss = 2000
         #criterion = torch.nn.BCELoss().cuda()
-        for i in range(0, epochs):
+        for i in range(0, epochs):       #iterations for calculating losses and accuracies for the specified epochs
             train_accuracy = 0
             net_loss = 0
             for _, (data, label) in enumerate(dataloader):
@@ -154,7 +155,7 @@ class spatioTemporalClassifier(nn.Module):
             print(train_accuracy / len(dataloader))
             print(net_loss / len(dataloader))
             scheduler.step()
-
+##calculation of accuracy
     def evaluate(self, model, dataloader):
         model.eval()
         for parameter in model.parameters():

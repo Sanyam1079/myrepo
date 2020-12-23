@@ -1,4 +1,4 @@
-# Description
+# Description (This is just to learn pulling and merging)
 The aim of this project is to dive into the field of action recognition and explore various techniques.
 Till now 2 models have been implemented <br/>
 1 - The model.py  is a pytorch implementation of the paper - **A Closer Look at Spatiotemporal Convolutions for Action Recognition**
